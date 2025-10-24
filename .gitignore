@@ -78,3 +78,4 @@ obj/
 .idea/workspace.xml
 .idea/navEditor.xml
 .idea/assetWizardSettings.xml
+.dart_tool/
