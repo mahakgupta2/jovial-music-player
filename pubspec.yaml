@@ -1,0 +1,58 @@
+name: mymusicplayer_new
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  shared_preferences: ^2.3.2
+
+  # ✅ Firebase core & auth with Firestore (all versions compatible)
+  firebase_core: ^4.0.0
+  firebase_auth: ^6.0.1
+  cloud_firestore: ^6.0.0
+
+  # ✅ State management & storage
+  hydrated_bloc: ^10.1.1
+  path_provider: ^2.1.3
+
+  # ✅ UI & icon helpers
+  cupertino_icons: ^1.0.8
+  flutter_svg: ^2.0.10+1
+  lottie: ^3.3.1
+  marquee: ^2.3.0
+
+  # ✅ Audio players
+  audioplayers: ^6.5.0
+  just_audio: ^0.10.4
+  just_audio_windows: ^0.2.0
+  audio_video_progress_bar: ^2.0.3
+  on_audio_query: ^2.9.0
+
+  # Image picker
+  image_picker: ^1.0.4
+
+
+
+  # ✅ Permissions & DI
+  permission_handler: ^12.0.1
+  get_it: any
+  dartz: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/fonts/
+    - assets/images/
+    - assets/vectors/
