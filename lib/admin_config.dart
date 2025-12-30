@@ -1,6 +1,7 @@
 class AdminConfig {
   static const Map<String, String> adminCredentials = {
     'harshitvarshney822@gmail.com': 'harshit@123',
+    'mahakgupta956@gmail.com':'mahak@123',
 
   };
 
