@@ -85,118 +85,129 @@ class _HomepageState extends State<Homepage> {
     }).toList());
   }
 
+  // All songs combined
+  List<Song> getAllSongs(List<Song> latestSongs) {
+    return [...featuredSongs, ...popularSingers, ...latestSongs];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 80),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 🔥 Hero Section
-              Stack(
+        child: StreamBuilder<List<Song>>(
+          stream: getLatestSongsFromFirestore(),
+          builder: (context, snapshot) {
+            final latestSongs = snapshot.data ?? [];
+            final allSongs = getAllSongs(latestSongs);
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 80),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Image.network(
-                    featuredSongs[1].imageUrl,
-                    width: double.infinity,
-                    height: 200,
-                    fit: BoxFit.cover,
-                  ),
-                  Positioned.fill(
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, Colors.black54],
-                        ),
+                  // 🔥 Hero Section
+                  Stack(
+                    children: [
+                      Image.network(
+                        featuredSongs[1].imageUrl,
+                        width: double.infinity,
+                        height: 200,
+                        fit: BoxFit.cover,
                       ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 20,
-                    left: 20,
-                    right: 20,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                featuredSongs[1].title,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              ElevatedButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => MusicPage(song: featuredSongs[1]),
-                                    ),
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.orange,
-                                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                                ),
-                                child: const Text(
-                                  "Play Now",
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ],
+                      Positioned.fill(
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Colors.transparent, Colors.black54],
+                            ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      Positioned(
+                        bottom: 20,
+                        left: 20,
+                        right: 20,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    featuredSongs[1].title,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 30,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      final index = allSongs.indexOf(featuredSongs[1]);
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => MusicPage(
+                                            song: featuredSongs[1],
+                                            playlist: allSongs,
+                                            currentIndex: index,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.orange,
+                                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                                    ),
+                                    child: const Text(
+                                      "Play Now",
+                                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
 
-              const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-              _buildSectionTitle("Discography"),
-              _buildHorizontalSongRow(context, featuredSongs),
+                  _buildSectionTitle("Discography"),
+                  _buildHorizontalSongRow(context, featuredSongs, allSongs),
 
-              _buildSectionTitle("Popular Singers"),
-              ...popularSingers.map((song) => _buildSongTile(context, song)),
+                  _buildSectionTitle("Popular Singers"),
+                  ...popularSingers.map((song) => _buildSongTile(context, song, allSongs)),
 
-              // 🔥 Latest Songs from Firebase
-              const SizedBox(height: 20),
-              _buildSectionTitle("Latest Songs"),
-              StreamBuilder<List<Song>>(
-                stream: getLatestSongsFromFirestore(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return const Padding(
+                  // 🔥 Latest Songs from Firebase
+                  const SizedBox(height: 20),
+                  _buildSectionTitle("Latest Songs"),
+                  if (snapshot.connectionState == ConnectionState.waiting)
+                    const Center(child: CircularProgressIndicator())
+                  else if (snapshot.hasError)
+                    const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
                       child: Text("Failed to load songs", style: TextStyle(color: Colors.red)),
-                    );
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text("No latest songs yet", style: TextStyle(color: Colors.white70)),
-                    );
-                  }
+                    )
+                  else if (latestSongs.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Text("No latest songs yet", style: TextStyle(color: Colors.white70)),
+                      )
+                    else
+                      _buildHorizontalSongRow(context, latestSongs, allSongs),
 
-                  final latestSongs = snapshot.data!;
-                  return _buildHorizontalSongRow(context, latestSongs);
-                },
+                  const SizedBox(height: 40),
+                ],
               ),
-
-              const SizedBox(height: 40),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -220,7 +231,7 @@ class _HomepageState extends State<Homepage> {
     ),
   );
 
-  Widget _buildHorizontalSongRow(BuildContext context, List<Song> songs) => SizedBox(
+  Widget _buildHorizontalSongRow(BuildContext context, List<Song> songs, List<Song> allSongs) => SizedBox(
     height: 160,
     child: ListView.builder(
       scrollDirection: Axis.horizontal,
@@ -229,13 +240,20 @@ class _HomepageState extends State<Homepage> {
       itemBuilder: (context, index) {
         final song = songs[index];
         final isFav = FavoritesStore.instance.contains(song);
+        final globalIndex = allSongs.indexOf(song);
 
         return Stack(
           children: [
             GestureDetector(
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => MusicPage(song: song)),
+                MaterialPageRoute(
+                  builder: (_) => MusicPage(
+                    song: song,
+                    playlist: allSongs,
+                    currentIndex: globalIndex,
+                  ),
+                ),
               ),
               child: Container(
                 width: 120,
@@ -277,8 +295,9 @@ class _HomepageState extends State<Homepage> {
     ),
   );
 
-  Widget _buildSongTile(BuildContext context, Song song) {
+  Widget _buildSongTile(BuildContext context, Song song, List<Song> allSongs) {
     final isFav = FavoritesStore.instance.contains(song);
+    final globalIndex = allSongs.indexOf(song);
 
     return ListTile(
       leading: ClipRRect(
@@ -302,7 +321,13 @@ class _HomepageState extends State<Homepage> {
       ),
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => MusicPage(song: song)),
+        MaterialPageRoute(
+          builder: (_) => MusicPage(
+            song: song,
+            playlist: allSongs,
+            currentIndex: globalIndex,
+          ),
+        ),
       ),
     );
   }

@@ -1,17 +1,26 @@
-import  'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:mymusicplayer_new/data/models/auth/song_model.dart';
+import 'package:mymusicplayer_new/audio_manager.dart';
 
 class MusicPage extends StatefulWidget {
   final Song song;
-  const MusicPage({super.key, required this.song});
+  final List<Song> playlist;
+  final int currentIndex;
 
+  const MusicPage({
+    super.key,
+    required this.song,
+    this.playlist = const [],
+    this.currentIndex = 0,
+  });
   @override
   State<MusicPage> createState() => _MusicPageState();
 }
 
 class _MusicPageState extends State<MusicPage> {
-  final AudioPlayer _player = AudioPlayer();
+  final AudioPlayer _player = AudioManager().player;
+
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
   PlayerState _state = PlayerState.stopped;
@@ -52,17 +61,27 @@ class _MusicPageState extends State<MusicPage> {
       }
     });
 
-    _player.play(UrlSource(widget.song.audioUrl));
     _player.setVolume(_volume);
   }
 
   @override
   void dispose() {
-    _player.dispose();
+    // Important: Don't dispose here so song keeps playing when leaving page
     super.dispose();
   }
 
-  void _toggle() => _playing ? _player.pause() : _player.resume();
+  Future<void> _toggle() async {
+    if (_playing) {
+      await _player.pause();
+    } else {
+      // Agar song pehli baar play ho raha hai
+      if (_state == PlayerState.stopped || _position == Duration.zero) {
+        await _player.play(UrlSource(widget.song.audioUrl));
+      } else {
+        await _player.resume();
+      }
+    }
+  }
 
   void _seekRelative(int secs) =>
       _player.seek(_position + Duration(seconds: secs));
@@ -83,6 +102,7 @@ class _MusicPageState extends State<MusicPage> {
   @override
   Widget build(BuildContext context) {
     final s = widget.song;
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -92,7 +112,6 @@ class _MusicPageState extends State<MusicPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Album art
             Padding(
               padding: const EdgeInsets.all(16),
               child: ClipRRect(
@@ -109,12 +128,17 @@ class _MusicPageState extends State<MusicPage> {
             Text(
               s.title,
               style: const TextStyle(
-                  fontSize: 22, color: Colors.amber, fontWeight: FontWeight.bold),
+                fontSize: 22,
+                color: Colors.amber,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            Text(s.subtitle, style: const TextStyle(color: Colors.white70)),
+            Text(
+              s.subtitle,
+              style: const TextStyle(color: Colors.white70),
+            ),
             const SizedBox(height: 20),
 
-            // Progress bar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
@@ -136,26 +160,26 @@ class _MusicPageState extends State<MusicPage> {
             ),
             const SizedBox(height: 10),
 
-            // Controls row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                // Loop toggle
                 IconButton(
                   icon: Icon(
-                    _isLooping ? Icons.repeat : Icons.repeat_one,
+                    _isLooping ? Icons.repeat_one : Icons.repeat,
                     color: Colors.white,
                   ),
                   onPressed: _toggleLoop,
                 ),
-
-                // Rewind 10s
                 IconButton(
                   icon: const Icon(Icons.replay_10, color: Colors.white, size: 30),
                   onPressed: () => _seekRelative(-10),
                 ),
-
-                // Play/pause button
+                IconButton(
+                  icon: const Icon(Icons.skip_previous, color: Colors.white, size: 36),
+                  onPressed: () {
+                    // Previous song logic yahan add karein
+                  },
+                ),
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: Colors.amber,
@@ -168,14 +192,16 @@ class _MusicPageState extends State<MusicPage> {
                     onPressed: _toggle,
                   ),
                 ),
-
-                // Forward 10s
+                IconButton(
+                  icon: const Icon(Icons.skip_next, color: Colors.white, size: 36),
+                  onPressed: () {
+                    // Next song logic yahan add karein
+                  },
+                ),
                 IconButton(
                   icon: const Icon(Icons.forward_10, color: Colors.white, size: 30),
                   onPressed: () => _seekRelative(10),
                 ),
-
-                // Volume icon (toggle slider)
                 IconButton(
                   icon: const Icon(Icons.volume_up, color: Colors.white),
                   onPressed: _toggleVolumeSlider,
@@ -183,7 +209,6 @@ class _MusicPageState extends State<MusicPage> {
               ],
             ),
 
-            // Volume slider (toggleable)
             if (_showVolumeSlider)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 50),
