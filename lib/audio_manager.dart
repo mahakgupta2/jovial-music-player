@@ -6,14 +6,46 @@ class AudioManager {
 
   final AudioPlayer player = AudioPlayer();
 
-  AudioManager._internal();
+  AudioManager._internal() {
+    // Set player mode to allow background play
+    player.setReleaseMode(ReleaseMode.stop);
+  }
 
   // 🔥 Music STOP method
   Future<void> stopAudio() async {
     try {
       await player.stop();
+      await player.dispose();
     } catch (e) {
-      print("Error stopping audio: $e");
+      // Silent error handling
     }
+  }
+
+  // 🔥 Pause Audio
+  Future<void> pauseAudio() async {
+    try {
+      await player.pause();
+    } catch (e) {
+      // Silent error handling
+    }
+  }
+
+  // 🔥 Resume Audio
+  Future<void> resumeAudio() async {
+    try {
+      await player.resume();
+    } catch (e) {
+      // Silent error handling
+    }
+  }
+
+  // 🔥 Check if playing
+  bool isPlaying() {
+    return player.state == PlayerState.playing;
+  }
+
+  // 🔥 Get current state
+  PlayerState getState() {
+    return player.state;
   }
 }

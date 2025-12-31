@@ -16,10 +16,10 @@ import 'package:mymusicplayer_new/presentation/service_locator.dart';
 import 'package:mymusicplayer_new/presentation/splash.dart';
 import 'package:mymusicplayer_new/home.dart';
 import 'package:mymusicplayer_new/search.dart';
-import 'package:mymusicplayer_new/music.dart';
 import 'package:mymusicplayer_new/profile.dart';
-import 'package:mymusicplayer_new/data/models/auth/song_model.dart';
-import 'package:mymusicplayer_new/data/models/auth/song_list.dart';
+// import 'package:mymusicplayer_new/data/models/auth/song_model.dart';  // ❌ Removed
+// import 'package:mymusicplayer_new/data/models/auth/song_list.dart';  // ❌ Removed
+import 'package:mymusicplayer_new/audio_manager.dart';
 
 
 // ✅ Dummy Admin Page
@@ -91,9 +91,7 @@ class PlayerPage extends StatefulWidget {
 }
 
 class _PlayerPageState extends State<PlayerPage> {
-  int _currentIndex = 2;
-
-  final Song dummySong = songs[0];
+  int _currentIndex = 2;  // Home as default
 
   late final List<Widget> _pages;
 
@@ -104,12 +102,18 @@ class _PlayerPageState extends State<PlayerPage> {
       const Favoritepage(),
       const Searchpage(),
       const Homepage(),
-      MusicPage(song: dummySong),
       const ProfilePage(),
     ];
   }
 
   void _onTabTapped(int index) => setState(() => _currentIndex = index);
+
+  @override
+  void dispose() {
+    // 🔥 Stop audio when app closes
+    AudioManager().stopAudio();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,7 +131,6 @@ class _PlayerPageState extends State<PlayerPage> {
           BottomNavigationBarItem(icon: Icon(Icons.favorite), label: "Favorite"),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: "Search"),
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.music_note_outlined), label: "Music"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],
       ),

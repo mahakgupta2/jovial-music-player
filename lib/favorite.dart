@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
-import 'package:mymusicplayer_new/favorites_store.dart'; // ✅ import shared store
-import 'package:mymusicplayer_new/data/models/auth/song_model.dart'; // ✅ for Song model
-
-void main() => runApp(const Favoritepage());
+import 'package:mymusicplayer_new/favorites_store.dart';
+import 'package:mymusicplayer_new/data/models/auth/song_model.dart';
+import 'music_player_page.dart';
 
 class Favoritepage extends StatelessWidget {
   const Favoritepage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: const MusicPlayerScreen(),
-    );
+    return const MusicPlayerScreen();
   }
 }
 
@@ -25,8 +20,7 @@ class MusicPlayerScreen extends StatefulWidget {
 }
 
 class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
-  final AudioPlayer _audioPlayer = AudioPlayer();
-  String? _currentUrl;
+  final _player = GlobalMusicPlayer.instance;
 
   @override
   void initState() {
@@ -34,24 +28,28 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     FavoritesStore.instance.listenable.addListener(_refresh);
   }
 
-  void _refresh() => setState(() {});
+  void _refresh() {
+    if (mounted) setState(() {});
+  }
 
   @override
   void dispose() {
-    _audioPlayer.dispose();
     FavoritesStore.instance.listenable.removeListener(_refresh);
     super.dispose();
   }
 
-  void _playSong(String url) async {
-    if (_currentUrl != url) {
-      await _audioPlayer.stop();
-      await _audioPlayer.play(UrlSource(url));
-      setState(() => _currentUrl = url);
-    } else {
-      await _audioPlayer.pause();
-      setState(() => _currentUrl = null);
-    }
+  void _openPlayer(List<Song> songs, int index) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => MusicPlayerPage(
+          song: songs[index],
+          playlist: songs,
+          currentIndex: index,
+        ),
+      ),
+    );
   }
 
   @override
@@ -60,33 +58,66 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black,
+
+      // ✅ APP BAR (NO BACK ARROW)
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: const Icon(Icons.arrow_back, color: Colors.white),
-        title: const Text('Favorite Songs', style: TextStyle(color: Colors.white)),
+        automaticallyImplyLeading: false, // ❌ removes arrow
+        title: const Text(
+          'Favorite Songs',
+          style: TextStyle(color: Colors.white),
+        ),
         centerTitle: true,
       ),
-      body: songs.isEmpty
-          ? const Center(
-        child: Text("No favorites yet!",
-            style: TextStyle(color: Colors.white54,fontSize: 20,fontWeight: FontWeight.bold,)),
-        ): ListView.builder(
-        itemCount: songs.length,
-        itemBuilder: (_, index) {
-          final song = songs[index];
-          return SongTile(
-            song: song,
-            isPlaying: _currentUrl == song.audioUrl,
-            onPlayPause: () => _playSong(song.audioUrl),
-            onRemove: () => FavoritesStore.instance.toggle(song),
-          );
-        },
-      ),
 
+      // 🔥 STACK for MiniPlayer
+      body: Stack(
+        children: [
+          songs.isEmpty
+              ? const Center(
+            child: Text(
+              "No favorites yet!",
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          )
+              : ListView.builder(
+            padding: const EdgeInsets.only(bottom: 80),
+            itemCount: songs.length,
+            itemBuilder: (_, index) {
+              final song = songs[index];
+              final isPlaying =
+                  _player.currentSong?.audioUrl == song.audioUrl &&
+                      _player.isPlaying;
+
+              return SongTile(
+                song: song,
+                isPlaying: isPlaying,
+                onPlayPause: () => _openPlayer(songs, index),
+                onRemove: () =>
+                    FavoritesStore.instance.toggle(song),
+              );
+            },
+          ),
+
+          // 🎵 MINI PLAYER (BOTTOM)
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: MiniPlayer(),
+          ),
+        ],
+      ),
     );
   }
 }
+
+// ================= SONG TILE =================
 
 class SongTile extends StatelessWidget {
   final Song song;
@@ -108,8 +139,14 @@ class SongTile extends StatelessWidget {
       leading: CircleAvatar(
         backgroundImage: NetworkImage(song.imageUrl),
       ),
-      title: Text(song.title, style: const TextStyle(color: Colors.white)),
-      subtitle: Text(song.subtitle, style: const TextStyle(color: Colors.white60)),
+      title: Text(
+        song.title,
+        style: const TextStyle(color: Colors.white),
+      ),
+      subtitle: Text(
+        song.subtitle,
+        style: const TextStyle(color: Colors.white60),
+      ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -117,6 +154,7 @@ class SongTile extends StatelessWidget {
             icon: Icon(
               isPlaying ? Icons.pause_circle : Icons.play_circle,
               color: Colors.yellow,
+              size: 28,
             ),
             onPressed: onPlayPause,
           ),
